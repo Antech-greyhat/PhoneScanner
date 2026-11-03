@@ -1,0 +1,4 @@
+{"query_status":"ok","data":[
+  {"sha256_hash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","signature":"Cerberus","tags":["Android","apk","Cerberus","signed"]},
+  {"sha256_hash":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","signature":null,"tags":["Android","apk","Hydra"]}
+]}
