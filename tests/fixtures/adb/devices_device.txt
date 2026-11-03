@@ -1,0 +1,2 @@
+List of devices attached
+SERIAL0001ABCD         device usb:1-2 product:a51nnxx model:SM_A515F device:a51 transport_id:1
