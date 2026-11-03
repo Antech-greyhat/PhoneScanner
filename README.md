@@ -25,6 +25,24 @@ Scan your Android phone from your laptop over ADB for sideloaded apps, risky per
 > Scan only phones you own or have permission to scan. Results are signs worth
 > checking, not proof. A clean scan does not prove the phone is safe.
 
+## Contents
+
+- [What it checks](#what-it-checks)
+- [Features](#features)
+- [Requirements](#requirements)
+- [Phone setup (one time)](#phone-setup-one-time)
+- [Installation](#installation)
+- [Quick start](#quick-start)
+- [Usage](#usage)
+- [Reports](#reports)
+- [Online and offline mode](#online-and-offline-mode)
+- [Troubleshooting](#troubleshooting)
+- [Limits](#limits)
+- [Contributing](#contributing)
+- [Roadmap](#roadmap)
+- [Contributors](#contributors)
+- [License](#license)
+
 ## What it checks
 
 Phone-Scanner is read-only on the phone. Everything stays on your laptop,
@@ -140,6 +158,35 @@ If `adb devices` shows `no permissions`, install udev rules with
 `sudo apt install android-sdk-platform-tools-common`, then unplug and replug the
 phone. If a package name is different on your distro, use the official
 Platform-Tools zip instead.
+
+## Quick start
+
+Once `adb` is installed (see [Installation](#installation)) and the phone is set
+up (see [Phone setup](#phone-setup-one-time)), clone the repo and run the tool:
+
+**Windows (PowerShell):**
+
+```powershell
+git clone https://github.com/Antech-greyhat/PhoneScanner.git
+cd PhoneScanner
+py -3 -m venv .venv
+.venv\Scripts\python.exe -m pip install -r requirements.txt
+.venv\Scripts\python.exe -m phone_scanner
+```
+
+**Linux:**
+
+```bash
+git clone https://github.com/Antech-greyhat/PhoneScanner.git
+cd PhoneScanner
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python -m phone_scanner
+```
+
+Then confirm the phone shows up (`adb devices` lists it as `device`), pick
+`[01] Quick scan`, and open the report it saves to `reports/`. Offline mode is
+the default and needs no API keys.
 
 ## Usage
 
