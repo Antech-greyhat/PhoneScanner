@@ -19,6 +19,7 @@ ALLOWED_SHELL_PREFIXES: tuple[tuple[str, ...], ...] = (
     ("settings", "get"),
     ("getprop",),
     ("cmd", "package", "query-activities"),
+    ("sha256sum",),
 )
 
 STATE_FIXES: dict[str, str] = {
@@ -169,6 +170,12 @@ def run_shell(serial: str, args: list[str], timeout: int = DEFAULT_TIMEOUT) -> s
         raise AdbCommandError(f"refused shell command: {' '.join(args)}")
     adb = require_adb()
     return _run([adb, "-s", serial, "shell", *args], timeout)
+
+
+def pull(serial: str, remote: str, local: str, timeout: int = 60) -> str:
+    # pull copies a file off the phone and never changes it, so it is allowed.
+    adb = require_adb()
+    return _run([adb, "-s", serial, "pull", remote, local], timeout)
 
 
 def _getprop(serial: str, name: str, timeout: int) -> str | None:
