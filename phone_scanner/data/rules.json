@@ -1,1 +1,68 @@
-{}
+{
+  "levels": {
+    "low_max": 3,
+    "medium_max": 7
+  },
+  "findings": {
+    "sideloaded": {
+      "points": 3,
+      "reason": "Installed from outside an app store."
+    },
+    "accessibility_enabled": {
+      "points": 4,
+      "reason": "Has an accessibility service turned on, which can read the screen and tap for it."
+    },
+    "device_admin": {
+      "points": 3,
+      "reason": "Registered as a device admin, which gives it strong control over the phone."
+    },
+    "no_launcher_icon": {
+      "points": 2,
+      "reason": "Has no launcher icon, so it is hidden from the app list."
+    },
+    "risky_permission:READ_SMS": {
+      "points": 3,
+      "reason": "Can read your text messages."
+    },
+    "risky_permission:RECEIVE_SMS": {
+      "points": 3,
+      "reason": "Can receive incoming text messages."
+    },
+    "risky_permission:SEND_SMS": {
+      "points": 3,
+      "reason": "Can send text messages, which can cost money."
+    },
+    "risky_permission:READ_CALL_LOG": {
+      "points": 2,
+      "reason": "Can read your call history."
+    },
+    "risky_permission:READ_CONTACTS": {
+      "points": 1,
+      "reason": "Can read your contacts."
+    },
+    "risky_permission:SYSTEM_ALERT_WINDOW": {
+      "points": 2,
+      "reason": "Can draw over other apps, which is used to fake login screens."
+    },
+    "risky_permission:REQUEST_INSTALL_PACKAGES": {
+      "points": 2,
+      "reason": "Can install other apps."
+    },
+    "risky_permission:BIND_ACCESSIBILITY_SERVICE": {
+      "points": 4,
+      "reason": "Declares an accessibility service, which can read the screen and tap for it."
+    }
+  },
+  "combos": [
+    {
+      "name": "banking_trojan_pattern",
+      "points": 4,
+      "reason": "Sideloaded app that can read SMS and use accessibility. This is the classic banking trojan pattern.",
+      "all_of": [
+        ["sideloaded"],
+        ["risky_permission:READ_SMS", "risky_permission:RECEIVE_SMS", "risky_permission:SEND_SMS"],
+        ["accessibility_enabled", "risky_permission:BIND_ACCESSIBILITY_SERVICE"]
+      ]
+    }
+  ]
+}
