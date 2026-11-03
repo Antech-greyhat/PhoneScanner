@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 APP_DIR_NAME_WINDOWS = "Phone-Scanner"
 APP_DIR_NAME_LINUX = "phone-scanner"
 ENV_DATA_DIR = "PHONE_SCANNER_DATA_DIR"
+ENV_REPORTS_DIR = "PHONE_SCANNER_REPORTS_DIR"
 
 VALID_MODES = ("offline", "online")
 VALID_FORMATS = ("html", "json")
@@ -36,6 +37,11 @@ def data_dir() -> Path:
 
 def config_path() -> Path:
     return data_dir() / "config.json"
+
+
+def reports_dir() -> Path:
+    override = os.environ.get(ENV_REPORTS_DIR)
+    return Path(override) if override else Path("reports")
 
 
 def is_first_run() -> bool:
