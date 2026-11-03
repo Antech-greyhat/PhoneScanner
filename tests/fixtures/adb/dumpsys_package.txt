@@ -1,0 +1,19 @@
+  Package [com.example.sideloaded] (abc123):
+    userId=10373
+    pkg=Package{deadbeef com.example.sideloaded}
+    codePath=/data/app/~~MTkJ5gHxV==/com.example.sideloaded-Vm-hCWJYerl==
+    versionName=1.2.3
+    requested permissions:
+      android.permission.INTERNET
+      android.permission.READ_SMS
+      android.permission.RECEIVE_SMS
+      android.permission.SYSTEM_ALERT_WINDOW
+    install permissions:
+      android.permission.INTERNET: granted=true
+    User 0: ceDataInode=1 installed=true hidden=false
+      firstInstallTime=2026-01-02 10:00:00
+      lastUpdateTime=2026-01-02 10:00:00
+      runtime permissions:
+        android.permission.READ_SMS: granted=true, flags=[ USER_SET]
+        android.permission.RECEIVE_SMS: granted=false
+        android.permission.SYSTEM_ALERT_WINDOW: granted=true, flags=[ USER_SET]
