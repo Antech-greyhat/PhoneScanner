@@ -19,17 +19,35 @@ Scan your Android phone from your laptop over ADB for sideloaded apps, risky per
 
 <p align="center"><i>Early development. Features are being added.</i></p>
 
+<!-- demo gif: .github/assets/demo.gif -->
+
 > [!IMPORTANT]
 > Scan only phones you own or have permission to scan. Results are signs worth
 > checking, not proof. A clean scan does not prove the phone is safe.
 
 ## What it checks
 
-Coming soon. This will list each check, why it matters, the adb command it uses, and whether any data leaves the laptop.
+Phone-Scanner is read-only on the phone. Everything stays on your laptop,
+except in Online mode, where only APK hashes (never files or your app list) are
+sent to a lookup service.
+
+| Check | Why it matters | adb command used | Data leaves laptop? |
+|---|---|---|---|
+| Sideloaded apps | Apps installed from outside a store are a common malware route | `pm list packages -3 -i -f` | No |
+| Risky permissions | SMS, contacts, call log and screen-overlay access can be abused | `dumpsys package <app>` | No |
+| Accessibility services | A service can read the screen and tap for the app | `settings get secure enabled_accessibility_services` | No |
+| Device admins | Device admin apps have strong control over the phone | `dumpsys device_policy` | No |
+| Hidden apps | An app with no launcher icon can hide from the app list | `cmd package query-activities ... LAUNCHER` | No |
+| APK hash match | Confirms an app matches known malware | `pm path` + `sha256sum` (or `pull`) | Online mode: hash only |
 
 ## Features
 
-Coming soon. Menu-driven CLI, online and offline modes, HTML and JSON reports, no root needed.
+- Menu-driven CLI with a clear status line (device, mode, report format)
+- Quick scan (apps, permissions, services) and Full scan (adds APK hashing)
+- Offline mode (no internet, no keys) and Online mode (hash lookups)
+- Local hash list, plus MalwareBazaar and VirusTotal lookups online
+- HTML and JSON reports
+- Read-only on the phone; no root needed
 
 ## Requirements
 
@@ -125,20 +143,121 @@ Platform-Tools zip instead.
 
 ## Usage
 
-Coming soon. The menu, its options and the CLI flags will be described here.
+Start the tool, then pick an option by number (`1` or `01` both work):
+
+```
+.venv\Scripts\python.exe -m phone_scanner      # Windows
+.venv/bin/python -m phone_scanner              # Linux
+```
+
+| Option | What it does |
+|---|---|
+| `[01]` Quick scan | Apps, permissions and services. No hashes. |
+| `[02]` Full scan | Quick scan plus an APK hash check. |
+| `[03]` Mode | Switch between Online and Offline. |
+| `[04]` Report format | Switch between HTML and JSON. |
+| `[05]` View last report | Open the newest report. |
+| `[06]` Update offline hash list | Download recent APK hashes from MalwareBazaar. |
+| `[99]` About | Show version and license. |
+| `[00]` Exit | Quit. |
+
+On the first run it asks once whether you own the phone or have permission to
+scan it, and remembers your answer.
+
+Command-line flags:
+
+| Flag | What it does |
+|---|---|
+| `--version` | Print the version and exit. |
+| `--no-banner`, `-q` | Skip the start-up banner. |
+| `--no-color` | Turn off colour (also honours the `NO_COLOR` environment variable). |
+| `--debug` | Show debug logging. |
 
 ## Reports
 
-Coming soon. Where reports are saved and what they contain.
+Reports are saved to a `reports/` folder as `scan-YYYYMMDD-HHMMSS.html` or
+`scan-YYYYMMDD-HHMMSS.json`, depending on the format you chose in `[04]`. The
+HTML report is one self-contained file that opens in any browser and works
+offline. Each report has a summary (counts per risk level), a per-app table
+(installer, level, score and the reasons), and the device details with a
+shortened serial.
+
+> [!WARNING]
+> A report lists the apps on your phone. Keep report files private and do not
+> commit them. The `reports/` folder is gitignored.
+
+<details>
+<summary>JSON report shape</summary>
+
+```json
+{
+  "tool_version": "0.1.0",
+  "scan_time": "2026-11-03T12:34:56Z",
+  "scan_type": "full",
+  "mode": "offline",
+  "device": { "model": "...", "android_version": "...", "serial": "..." },
+  "summary": { "Low": 90, "Medium": 4, "High": 1 },
+  "apps": [
+    {
+      "package": "com.example.app",
+      "installer": "com.android.vending",
+      "findings": ["sideloaded"],
+      "score": 3,
+      "level": "Low",
+      "reasons": [{ "key": "sideloaded", "points": 3, "text": "..." }],
+      "hash": { "source": "offline", "verdict": "malicious", "label": "..." }
+    }
+  ],
+  "notes": "A clean result does not prove the phone is safe. ..."
+}
+```
+</details>
 
 ## Online and offline mode
 
-Coming soon. How each mode works and how to get the free API keys.
+**Offline (default).** No internet and no API keys. Quick scan checks apps,
+permissions and services. Full scan hashes each app's APK and compares it to a
+local hash list, which you build and grow with `[06]`.
+
+**Online.** Full scan looks each hash up in this order: a local 7-day cache,
+your local hash list, MalwareBazaar, then VirusTotal for anything still unknown.
+**Only hashes are sent, never APK files or your app list.**
+
+Keys go in a `.env` file (copy `.env.example`). They are read from `.env` only
+and are never printed or saved:
+
+```
+VT_API_KEY=your_virustotal_key
+MB_AUTH_KEY=your_malwarebazaar_key
+```
+
+- MalwareBazaar key (free): <https://auth.abuse.ch>
+- VirusTotal key (free): virustotal.com, Profile > API key
+
+The free VirusTotal API allows 4 requests a minute and 500 a day, so the tool
+waits about 15 seconds between VirusTotal calls and stops asking it once a quota
+error comes back. The free VirusTotal and MalwareBazaar APIs are for
+non-commercial use. Never commit your keys.
 
 ## Troubleshooting
 
-Coming soon. Fixes for `unauthorized`, `offline`, `no permissions`, Windows
-drivers and API quota limits.
+| Problem | Fix |
+|---|---|
+| `adb` not found | Install Platform-Tools, then close and reopen the terminal. Add the `platform-tools` folder to PATH if needed. |
+| Device shows `unauthorized` | Unlock the phone and tap **Allow** on the USB debugging prompt. Tick **Always allow from this computer**. |
+| Device shows `offline` | Replug the phone, or run `adb kill-server` then `adb start-server`. |
+| `no permissions` (Linux) | `sudo apt install android-sdk-platform-tools-common`, then unplug and replug. |
+| Windows does not see the phone | Install the phone maker's USB driver. The Google USB driver is only for Google phones. |
+| VirusTotal quota hit | Wait for the daily quota to reset, or use Offline mode. |
+
+## Limits
+
+- **Signs, not proof.** A flag means "worth checking", not "infected".
+- **Unknown is not clean.** No hash match means the app is not in the lists, not
+  that it is safe.
+- **New malware is not in hash lists yet**, so a fresh threat can be missed.
+- The allowlist only lowers the score of apps installed from the Play Store, so
+  a sideloaded fake with a copied package name keeps its score.
 
 ## Contributing
 
