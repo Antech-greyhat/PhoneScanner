@@ -77,6 +77,14 @@ def test_medium_band():
     assert result.level == "Medium"
 
 
+def test_malware_hash_match_scores_high():
+    app = _findings("com.example.bad", None, ["sideloaded", "malware_hash_match"])
+    result = scoring.score_app(app, RULES, set())
+    assert result.score >= 10
+    assert result.level == "High"
+    assert any(r.key == "malware_hash_match" for r in result.reasons)
+
+
 def test_summarize_counts():
     results = [
         scoring.ScoreResult("a", None, 0, "Low"),

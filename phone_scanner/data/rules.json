@@ -4,6 +4,10 @@
     "medium_max": 7
   },
   "findings": {
+    "malware_hash_match": {
+      "points": 10,
+      "reason": "The app's APK matches a known malware hash."
+    },
     "sideloaded": {
       "points": 3,
       "reason": "Installed from outside an app store."
