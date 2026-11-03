@@ -25,6 +25,7 @@ class AppResult:
     info: AppInfo
     findings: AppFindings
     score: ScoreResult
+    hash_result: dict[str, Any] | None = None
 
 
 def _app_dict(result: AppResult) -> dict[str, Any]:
@@ -44,7 +45,7 @@ def _app_dict(result: AppResult) -> dict[str, Any]:
             {"key": r.key, "points": r.points, "text": r.text}
             for r in result.score.reasons
         ],
-        "hash": None,
+        "hash": result.hash_result,
     }
 
 

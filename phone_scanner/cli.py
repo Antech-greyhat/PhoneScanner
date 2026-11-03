@@ -9,6 +9,7 @@ import os
 import time
 import webbrowser
 
+import requests
 from rich.console import Console
 from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn
 from rich.table import Table
@@ -16,6 +17,8 @@ from rich.text import Text
 
 from phone_scanner import __version__, adb, checks, collect, config, scoring
 from phone_scanner.adb import Device
+from phone_scanner.hashes import cache, malwarebazaar, offline
+from phone_scanner.hashes.lookup import HashResolver, HashVerdict
 from phone_scanner.report import html_report, json_report
 from phone_scanner.ui import banner, menu
 
@@ -167,16 +170,25 @@ def results_table(report: dict) -> Table:
     return table
 
 
-def _collect_and_score(
-    console: Console, cfg: config.Config, device: Device, info: adb.DeviceInfo
-) -> dict:
-    columns = (
+def hash_list_path() -> object:
+    return config.data_dir() / "hashes.json"
+
+
+def cache_path() -> object:
+    return config.data_dir() / "hash_cache.json"
+
+
+def _progress_columns() -> tuple:
+    return (
         SpinnerColumn(),
         TextColumn("[progress.description]{task.description}"),
         BarColumn(),
         TextColumn("{task.completed}/{task.total}"),
     )
-    with Progress(*columns, console=console, transient=True) as progress:
+
+
+def _collect(console: Console, device: Device) -> collect.ScanData:
+    with Progress(*_progress_columns(), console=console, transient=True) as progress:
         task = progress.add_task("Collecting apps", total=None)
 
         def on_progress(done: int, total: int, package: str) -> None:
@@ -184,15 +196,73 @@ def _collect_and_score(
                 task, total=total, completed=done, description=f"Scanning {package}"
             )
 
-        data = collect.collect(device.serial, on_progress=on_progress)
+        return collect.collect(device.serial, on_progress=on_progress)
+
+
+def _hash_apps(
+    console: Console, cfg: config.Config, device: Device, data: collect.ScanData
+) -> dict[str, HashVerdict]:
+    local_list = offline.load_hash_list(hash_list_path())
+    online = cfg.mode == "online"
+    cache_data = cache.load_cache(cache_path()) if online else {}
+    resolver = HashResolver(
+        local_list,
+        cache_data,
+        mb_key=os.environ.get("MB_AUTH_KEY") if online else None,
+        vt_key=os.environ.get("VT_API_KEY") if online else None,
+    )
+    verdicts: dict[str, HashVerdict] = {}
+    with Progress(*_progress_columns(), console=console, transient=True) as progress:
+        task = progress.add_task("Hashing apps", total=len(data.apps))
+        for app in data.apps:
+            progress.update(task, advance=1, description=f"Hashing {app.package}")
+            sha = offline.hash_apk(device.serial, app.package)
+            if sha is None:
+                continue
+            verdicts[app.package] = (
+                resolver.resolve_online(sha)
+                if online
+                else resolver.resolve_offline(sha)
+            )
+    if online:
+        cache.save_cache(cache_data, cache_path())
+    return verdicts
+
+
+def _assemble_report(
+    cfg: config.Config,
+    device: Device,
+    info: adb.DeviceInfo,
+    data: collect.ScanData,
+    scan_type: str,
+    verdicts: dict[str, HashVerdict],
+) -> dict:
     findings = checks.check_all(
         data.apps, data.accessibility_packages, data.admin_packages
     )
+    for finding in findings:
+        verdict = verdicts.get(finding.package)
+        if verdict is not None and verdict.verdict == "malicious":
+            finding.findings.append("malware_hash_match")
     scores = scoring.score_all(findings, scoring.load_rules(), scoring.load_allowlist())
-    results = [
-        json_report.AppResult(app, finding, score)
-        for app, finding, score in zip(data.apps, findings, scores, strict=True)
-    ]
+    results: list[json_report.AppResult] = []
+    for app, finding, score in zip(data.apps, findings, scores, strict=True):
+        verdict = verdicts.get(app.package)
+        hash_result = None
+        if verdict is not None:
+            hash_result = {
+                "source": verdict.source,
+                "verdict": verdict.verdict,
+                "label": verdict.label,
+            }
+            if verdict.verdict == "malicious" and verdict.label:
+                for reason in score.reasons:
+                    if reason.key == "malware_hash_match":
+                        reason.text = (
+                            f"Matches known malware: {verdict.label} "
+                            f"(via {verdict.source})."
+                        )
+        results.append(json_report.AppResult(app, finding, score, hash_result))
     device_dict = {
         "model": info.model,
         "android_version": info.android_release,
@@ -200,7 +270,7 @@ def _collect_and_score(
         "serial": menu.shorten_serial(device.serial),
     }
     return json_report.build_report(
-        __version__, "quick", cfg.mode, device_dict, results
+        __version__, scan_type, cfg.mode, device_dict, results
     )
 
 
@@ -212,13 +282,13 @@ def save_report(cfg: config.Config, report: dict) -> object:
     return html_report.write_html(report, reports_dir / f"{name}.html")
 
 
-def run_quick_scan(console: Console, cfg: config.Config) -> None:
+def _pick_ready_device(console: Console) -> Device | None:
     try:
         devices = adb.list_devices()
     except adb.AdbError as exc:
         console.print(f"[!] {exc}", style="red", markup=False)
         pause(console)
-        return
+        return None
     device = pick_device(console, devices)
     if device is None:
         state = devices[0].state if devices else "no device"
@@ -228,10 +298,25 @@ def run_quick_scan(console: Console, cfg: config.Config) -> None:
             markup=False,
         )
         pause(console)
+    return device
+
+
+def _run_scan(console: Console, cfg: config.Config, scan_type: str) -> None:
+    device = _pick_ready_device(console)
+    if device is None:
         return
+    if scan_type == "full" and cfg.mode == "online":
+        console.print(
+            "[!] Online full scan can be slow: VirusTotal allows 4 lookups a "
+            "minute, so unknown apps wait 15s each.",
+            style="yellow",
+            markup=False,
+        )
     try:
         info = adb.get_device_info(device.serial)
-        report = _collect_and_score(console, cfg, device, info)
+        data = _collect(console, device)
+        verdicts = _hash_apps(console, cfg, device, data) if scan_type == "full" else {}
+        report = _assemble_report(cfg, device, info, data, scan_type, verdicts)
     except KeyboardInterrupt:
         console.print("\n[!] Scan cancelled.", style="yellow", markup=False)
         pause(console)
@@ -245,6 +330,45 @@ def run_quick_scan(console: Console, cfg: config.Config) -> None:
     console.print(f"[+] Report saved to {path}", style="cyan", markup=False)
     with contextlib.suppress(KeyboardInterrupt, EOFError):
         console.input("[?] Press Enter to return ")
+
+
+def run_quick_scan(console: Console, cfg: config.Config) -> None:
+    _run_scan(console, cfg, "quick")
+
+
+def run_full_scan(console: Console, cfg: config.Config) -> None:
+    _run_scan(console, cfg, "full")
+
+
+def update_offline_list(console: Console, cfg: config.Config) -> None:
+    mb_key = os.environ.get("MB_AUTH_KEY")
+    if not mb_key:
+        console.print(
+            "[!] No MalwareBazaar key. Get a free one at https://auth.abuse.ch "
+            "and put MB_AUTH_KEY in .env.",
+            style="yellow",
+            markup=False,
+        )
+        pause(console)
+        return
+    try:
+        with console.status("Downloading hashes from MalwareBazaar..."):
+            new = malwarebazaar.fetch_hashes(mb_key, limit=1000)
+    except requests.RequestException as exc:
+        console.print(f"[!] Update failed: {exc}", style="red", markup=False)
+        pause(console)
+        return
+    path = hash_list_path()
+    existing = offline.load_hash_list(path)
+    merged = offline.merge_hashes(existing, new)
+    offline.save_hash_list(merged, path)
+    added = len(merged) - len(existing)
+    console.print(
+        f"[+] Offline hash list now has {len(merged)} hashes ({added} new).",
+        style="cyan",
+        markup=False,
+    )
+    pause(console)
 
 
 def _print_json_summary(console: Console, path) -> None:
@@ -289,12 +413,16 @@ def handle_choice(console: Console, cfg: config.Config, choice: str) -> bool:
         return False
     if choice == "01":
         run_quick_scan(console, cfg)
+    elif choice == "02":
+        run_full_scan(console, cfg)
     elif choice == "03":
         toggle_mode(console, cfg)
     elif choice == "04":
         toggle_format(console, cfg)
     elif choice == "05":
         view_last_report(console, cfg)
+    elif choice == "06":
+        update_offline_list(console, cfg)
     elif choice == "99":
         show_about(console)
     else:
