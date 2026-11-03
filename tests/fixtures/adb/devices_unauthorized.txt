@@ -1,0 +1,2 @@
+List of devices attached
+SERIAL0002EFGH          unauthorized usb:1-2 transport_id:2

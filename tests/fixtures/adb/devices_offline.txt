@@ -1,0 +1,2 @@
+List of devices attached
+SERIAL0003IJKL          offline usb:1-2 transport_id:3
