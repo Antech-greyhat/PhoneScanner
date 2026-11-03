@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "phone-scanner"
+description = "Scan an Android phone over ADB for malware signs."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "GPL-3.0-or-later"
+authors = [{ name = "Antony Mwendwa" }]
+dynamic = ["version"]
+dependencies = [
+    "rich>=13.7",
+    "requests>=2.31",
+    "python-dotenv>=1.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/Antech-greyhat/PhoneScanner"
+Issues = "https://github.com/Antech-greyhat/PhoneScanner/issues"
+
+[project.scripts]
+phone-scanner = "phone_scanner.cli:main"
+
+[tool.setuptools.dynamic]
+version = { attr = "phone_scanner.__version__" }
+
+[tool.setuptools.packages.find]
+include = ["phone_scanner*"]
+
+[tool.setuptools.package-data]
+phone_scanner = ["data/*.json"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
