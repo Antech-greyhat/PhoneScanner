@@ -1,0 +1,23 @@
+name: Feature request
+description: Suggest an idea for Phone-Scanner
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What problem would this solve? What are you trying to do?
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: The idea
+      description: What would you like Phone-Scanner to do?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Other options considered
+      description: Any other ways you thought about solving this?

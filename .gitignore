@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+build/
+dist/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Secrets and scan output
+.env
+reports/
+*.apk
+
+# Editor and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Build and working files (not part of the project)
+BUILD_PROMPT.md
+Phone Scanner README and banner.md
+Claude Code build prompt for Phone Scanner.md
+CLAUDE.md
+PROGRESS.md
+.claude/
+_captures/

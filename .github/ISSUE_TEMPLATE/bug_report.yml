@@ -1,0 +1,56 @@
+name: Bug report
+description: Report a problem with Phone-Scanner
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What went wrong, and what did you expect instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: List the steps so we can see the same problem.
+      placeholder: |
+        1. Run ...
+        2. Pick option ...
+        3. See ...
+    validations:
+      required: true
+  - type: input
+    id: phone
+    attributes:
+      label: Phone model and Android version
+      placeholder: e.g. Tecno Spark 10, Android 13
+    validations:
+      required: true
+  - type: dropdown
+    id: laptop-os
+    attributes:
+      label: Laptop OS
+      options:
+        - Windows
+        - Linux
+    validations:
+      required: true
+  - type: input
+    id: python-version
+    attributes:
+      label: Python version
+      placeholder: e.g. 3.12
+  - type: textarea
+    id: error-output
+    attributes:
+      label: Error output
+      description: Paste any error message. Run with --debug for more detail.
+      render: shell
+  - type: checkboxes
+    id: no-personal-data
+    attributes:
+      label: Personal data removed
+      options:
+        - label: I removed personal data (phone numbers, serials, IMEI, my app list) from the logs.
+          required: true
