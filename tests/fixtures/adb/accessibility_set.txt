@@ -1,0 +1,1 @@
+com.example.sideloaded/com.example.sideloaded.SpyService:com.example.other/.Svc

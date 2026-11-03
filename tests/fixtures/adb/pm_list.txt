@@ -1,0 +1,4 @@
+package:/data/app/~~O490MtG_etLC==/com.example.store-KZlGOBoxEcFG==/base.apk=com.example.store  installer=com.android.vending uid:10063
+package:/data/app/~~MTkJ5gHxV==/com.example.sideloaded-Vm-hCWJYerl==/base.apk=com.example.sideloaded  installer=null uid:10373
+package:/data/app/~~ujtzqYFZ0==/com.example.manual-r_7iuuPfld==/base.apk=com.example.manual  installer=com.google.android.packageinstaller uid:10606
+package:/product/data-app/Thing/Thing.apk=com.example.vendor  installer=com.xiaomi.mipicks uid:10281
